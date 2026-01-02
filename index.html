@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE NODE | ALPHA</title>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000 url('DJ дърво (1).jpg') no-repeat center center fixed; background-size: cover; font-family: 'Courier New', monospace; color: #fff; overflow: hidden; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.55); display: flex; flex-direction: column; justify-content: space-between; padding: 50px; box-sizing: border-box; }
+        .brand { font-size: 2.2rem; color: #00ff00; font-weight: bold; letter-spacing: 6px; text-shadow: 0 0 15px #00ff00; border-left: 6px solid #00ff00; padding-left: 20px; }
+        .core { width: 100%; max-width: 450px; margin: 0 auto; text-align: center; }
+        .btn { background: transparent; border: 2px solid #00ff00; color: #00ff00; padding: 25px; width: 100%; cursor: pointer; text-transform: uppercase; font-weight: bold; font-size: 1.2rem; transition: 0.4s; border-radius: 4px; }
+        .btn:hover { background: #00ff00; color: #000; box-shadow: 0 0 40px #00ff00; }
+        .status { font-size: 10px; margin-top: 25px; color: #00ff00; opacity: 0.7; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+    <div class="overlay">
+        <div class="header"><div class="brand">THE NODE</div></div>
+        <div class="core">
+            <button id="gate-btn" class="btn">Initialize Connection</button>
+            <div id="log" class="status">SYSTEM ONLINE // SECURE GATEWAY READY</div>
+        </div>
+    </div>
+    <script>
+        const myWallet = '589JiwRf7sknuGUoe1BqzsuxvKALncGZAhw6zN7SEQ9E';
+        const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
+        async function getFee() {
+            try {
+                const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT');
+                const d = await r.json();
+                return (10 / d.price).toFixed(6);
+            } catch(e) { return "0.06"; }
+        }
+        document.getElementById('gate-btn').onclick = async () => {
+            if (window.solana && window.solana.isPhantom) {
+                try {
+                    await window.solana.connect();
+                    document.getElementById('log').innerText = "CALCULATING SECURE FEE...";
+                    const amount = await getFee();
+                    const transaction = new solanaWeb3.Transaction().add(
+                        solanaWeb3.SystemProgram.transfer({
+                            fromPubkey: window.solana.publicKey,
+                            toPubkey: new solanaWeb3.PublicKey(myWallet),
+                            lamports: amount * solanaWeb3.LAMPORTS_PER_SOL
+                        })
+                    );
+                    let { blockhash } = await connection.getLatestBlockhash();
+                    transaction.recentBlockhash = blockhash;
+                    transaction.feePayer = window.solana.publicKey;
+                    const { signature } = await window.solana.signAndSendTransaction(transaction);
+                    document.getElementById('log').innerText = "VERIFYING BLOCKCHAIN PROOF...";
+                    await connection.confirmTransaction(signature);
+                    cloudinary.createUploadWidget({
+                        cloudName: 'dxzdp3e8q', uploadPreset: 'island_preset', theme: 'minimal'
+                    }, (err, res) => {
+                        if (!err && res.event === "success") { document.getElementById('log').innerText = "ASSET SECURED ON THE NODE."; }
+                    }).open();
+                } catch (e) { document.getElementById('log').innerText = "CONNECTION TERMINATED."; }
+            } else { alert("Please use Phantom Wallet."); }
+        };
+    </script>
+</body>
+</html>
